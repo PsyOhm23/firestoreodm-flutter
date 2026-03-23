@@ -29,8 +29,10 @@ abstract class ParserGenerator<GlobalData, Data, Annotation>
 
     var hasGeneratedGlobalCode = false;
 
-    for (final element
-        in library.topLevelElements.where(typeChecker.hasAnnotationOf)) {
+    for (final element in library.fragments
+        .expand((f) => f.children)
+        .map((f) => f.element)
+        .where(typeChecker.hasAnnotationOf)) {
       if (!hasGeneratedGlobalCode) {
         hasGeneratedGlobalCode = true;
         for (final generated

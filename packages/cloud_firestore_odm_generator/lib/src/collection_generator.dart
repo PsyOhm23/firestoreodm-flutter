@@ -20,7 +20,7 @@ import 'templates/query_document_snapshot.dart';
 import 'templates/query_reference.dart';
 import 'templates/query_snapshot.dart';
 
-const namedQueryChecker = TypeChecker.fromRuntime(NamedQuery);
+const namedQueryChecker = TypeChecker.typeNamed(NamedQuery);
 
 class QueryingField {
   QueryingField(
@@ -69,7 +69,8 @@ class CollectionGenerator
   GlobalData parseGlobalData(LibraryElement library) {
     final globalData = GlobalData();
 
-    for (final element in library.topLevelElements) {
+    for (final element
+        in library.fragments.expand((f) => f.children).map((f) => f.element)) {
       for (final queryAnnotation in namedQueryChecker.annotationsOf(element)) {
         final queryData = NamedQueryData.fromAnnotation(queryAnnotation);
 

@@ -15,9 +15,9 @@ import 'package:source_helper/source_helper.dart';
 import 'collection_generator.dart';
 import 'names.dart';
 
-const collectionChecker = TypeChecker.fromRuntime(Collection);
-const jsonSerializableChecker = TypeChecker.fromRuntime(JsonSerializable);
-const freezedChecker = TypeChecker.fromRuntime(Freezed);
+const collectionChecker = TypeChecker.typeNamed(Collection);
+const jsonSerializableChecker = TypeChecker.typeNamed(JsonSerializable);
+const freezedChecker = TypeChecker.typeNamed(Freezed);
 
 class CollectionGraph {
   CollectionGraph._(this.roots, this.subCollections);
@@ -147,13 +147,13 @@ class CollectionData with Names {
       );
     }
 
-    final annotatedElementSource = annotatedElement.librarySource;
+    final annotatedElementSource = annotatedElement.library?.uri;
     // TODO(rrousselGit) handle parts
     // Whether the model class and the reference variable are defined in the same file
     // This is important because json_serializable generates private code for
     // decoding a Model class.
     final modelAndReferenceInTheSameLibrary =
-        collectionTargetElement.librarySource == annotatedElementSource;
+        collectionTargetElement.library.uri == annotatedElementSource;
     if (!modelAndReferenceInTheSameLibrary) {
       throw InvalidGenerationSourceError(
         '''
@@ -161,7 +161,7 @@ When using json_serializable, the `@Collection` annotation and the class that
 represents the content of the collection must be in the same file.
 
 - @Collection is from $annotatedElementSource
-- `$collectionTargetElement` is from ${collectionTargetElement.librarySource}
+- `$collectionTargetElement` is from ${collectionTargetElement.library.uri}
 ''',
         element: annotatedElement,
       );
@@ -176,13 +176,13 @@ represents the content of the collection must be in the same file.
     }
 
     final collectionTargetElementPublicType =
-        collectionTargetElement.name.public;
+        collectionTargetElement.name!.public;
     final fromJson = collectionTargetElement.constructors
         .firstWhereOrNull((ctor) => ctor.name == 'fromJson');
     if (fromJson != null) {
-      if (fromJson.parameters.length != 1 ||
-          !fromJson.parameters.first.isRequiredPositional ||
-          !fromJson.parameters.first.type.isDartCoreMap) {
+      if (fromJson.formalParameters.length != 1 ||
+          !fromJson.formalParameters.first.isRequiredPositional ||
+          !fromJson.formalParameters.first.type.isDartCoreMap) {
         // TODO support deserializing generic objects
         throw InvalidGenerationSourceError(
           '@Collection was used with the class ${collectionTargetElement.name} but '
@@ -203,7 +203,8 @@ represents the content of the collection must be in the same file.
       collectionTargetElementPublicType: collectionTargetElementPublicType,
     );
     if (toJson != null) {
-      if (toJson.parameters.isNotEmpty || !toJson.returnType.isDartCoreMap) {
+      if (toJson.formalParameters.isNotEmpty ||
+          !toJson.returnType.isDartCoreMap) {
         // TODO support serializing generic objects
         throw InvalidGenerationSourceError(
           '@Collection was used with the class ${collectionTargetElement.name} but '
@@ -299,7 +300,7 @@ represents the content of the collection must be in the same file.
             .where((f) => !f.isJsonIgnored())
             .map(
               (f) => QueryingField(
-                f.name,
+                f.name!,
                 f.type,
                 whereDoc: '',
                 orderByDoc: '',
@@ -427,7 +428,7 @@ extension on ClassElement {
     required List<ConstructorElement> freezedConstructors,
   }) {
     if (hasFreezed) {
-      return freezedConstructors.single.parameters;
+      return freezedConstructors.single.formalParameters;
     } else {
       final uniqueFields = <String, FieldElement>{};
 
@@ -440,7 +441,7 @@ extension on ClassElement {
       for (final field in allFields) {
         if (field.getter != null && !field.getter!.isSynthetic) continue;
         if (field.isStatic) continue;
-        uniqueFields[field.name] ??= field;
+        uniqueFields[field.name!] ??= field;
       }
       return uniqueFields.values;
     }
@@ -458,9 +459,9 @@ const _coreSetChecker = TypeChecker.fromUrl('dart:core#Set');
 
 extension DartTypeExtension on DartType {
   bool get isJsonDocumentReference {
-    return element?.librarySource?.uri.scheme == 'package' &&
+    return element?.library?.uri.scheme == 'package' &&
         const {'cloud_firestore'}
-            .contains(element?.librarySource?.uri.pathSegments.first) &&
+            .contains(element?.library?.uri.pathSegments.first) &&
         element?.name == 'DocumentReference' &&
         (this as InterfaceType).typeArguments.single.isDartCoreMap;
   }
@@ -485,7 +486,7 @@ extension DartTypeExtension on DartType {
 
 extension on Element {
   bool isJsonIgnored() {
-    const checker = TypeChecker.fromRuntime(JsonKey);
+    const checker = TypeChecker.typeNamed(JsonKey);
     final jsonKeys = checker.annotationsOf(this);
 
     for (final jsonKey in jsonKeys) {
@@ -504,7 +505,7 @@ extension on Element {
   }
 
   bool hasId() {
-    const checker = TypeChecker.fromRuntime(Id);
+    const checker = TypeChecker.typeNamed(Id);
     return checker.hasAnnotationOf(this);
   }
 }

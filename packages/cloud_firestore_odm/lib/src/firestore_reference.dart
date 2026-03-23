@@ -186,7 +186,7 @@ abstract class FirestoreQuerySnapshot<Model,
 /// (added, modified, or removed).
 @sealed
 class FirestoreDocumentChange<
-    DocumentSnapshot extends FirestoreDocumentSnapshot<Object?>> {
+    TDocumentSnapshot extends FirestoreDocumentSnapshot<Object?>> {
   /// A [DocumentChange] represents a change to the documents matching a query.
   ///
   /// It contains the document affected and the type of change that occurred
@@ -216,7 +216,7 @@ class FirestoreDocumentChange<
   final int newIndex;
 
   /// Returns the [DocumentSnapshot] for this instance.
-  final DocumentSnapshot doc;
+  final TDocumentSnapshot doc;
 }
 
 /// An implementation detail for applying operators such as `startAt` to queries.
